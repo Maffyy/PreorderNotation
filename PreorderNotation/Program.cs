@@ -8,61 +8,83 @@ namespace PreorderNotation
 {
     enum NodeType { LEAF, NODE}
     enum Data { NUMBER, OPERATOR };
-    enum Operator { MULT, ADD, SUB, DIV, MINUS }
+    enum Op { MULT, ADD, SUB, DIV, MINUS }
+    
     interface INode
     {
-        void setData(Data c);
-        Data getData();
+        NodeType getNode();
+        void setNode(NodeType t);
     }
-  
-    abstract class Node : INode
-    {
-        Data data { get; set; }
-        INode right { get; set; }
-        INode left { get; set; }
 
-        public void setData(Data d)
+    class Node 
+    {
+        NodeType nodeT;
+        int num;
+       public NodeType getNode()
+       {
+            return NodeType.NODE;
+       }
+       public void setNode(NodeType t)
         {
-            data = d;
+            nodeT = t;
         }
-        public abstract Data getData();
+        public int getValue()
+        {
+            return num;
+        }
+        public void setValue(int n)
+        {
+            num = n;
+        }
+       public Node right { get; set; }
+       public Node left { get; set; }
+       
     }
   
     class Operand : Node
     {
-    
-        int num { get; set; }
-        
-      
-        
-
-    }
-    class Operator : Node
-    {
-        Data data;
-        char op { get; set; }
-        public void setData(Data c)
+        public int num { get; }
+        public Operand(int n)
         {
-            data = c;
+            num = n;
         }
-        public Data getData()
+        
+    }
+    class Leaf : INode
+    {
+        char op { get; set; }
+        NodeType nodeT;
+        public NodeType getNode()
         {
-            return data;
+            return NodeType.NODE;
+        }
+        public void setNode(NodeType t)
+        {
+            nodeT = t;
+        }
+        public Operator(char o)
+        {
+            op = o;
         }
     }
 
     class PreorderNotation
     {
-        public static int evaluate(string expr)
+        public static int buildTree(string expr)
         {
             char[] operators = new char[] { '+', '-', '*', '/', '~' };
             string[] tokens = expr.Split(' ');
+            Stack<Node> NodeStack = new Stack<Node>();
             foreach (string token in tokens.Reverse())
             {
                 int num;
                 if (int.TryParse(token,out num) && !token.Equals(operators))
                 {
-
+                    Node n = new Operand(num);
+                    n.left = null;
+                    n.right = null;
+                    n.data = Data.NUMBER;
+                    NodeStack.Push(n);
                 }
                 else if (!int.TryParse(token, out num) && !token.Equals(operators))
                 {
@@ -72,6 +94,29 @@ namespace PreorderNotation
                 else
                 {
 
+                    if (token.Equals(operators) && !token.Equals('~'))
+                    {
+                        if ( NodeStack.Count == 0)
+                        {
+                            Console.WriteLine("Format Error");
+                            Environment.Exit(0);
+                        }
+                        int temp = ((Operand)NodeStack.Pop()).num;
+                        temp = -temp;
+                        Node tempN = new Operand(temp);
+                        tempN.left = null;
+                        tempN.right = null;
+                        NodeStack.Push(tempN);
+                    }
+                    else
+                    {
+                        if ( NodeStack.Count < 2)
+                        {
+                            Console.WriteLine("Format Error");
+                            Environment.Exit(0);
+                        }
+                        Node internal = new Operator
+                    }
                 }   
             }
 
