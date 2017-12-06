@@ -4,132 +4,187 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+/// <summary>
+///  Evaluater of a Prefix expression
+///  Program converts the expression in to the Binary Expression Tree
+///  If a tree is constructed, program will return the result.
+/// </summary>
+
 namespace PreorderNotation
 {
-    enum NodeType { LEAF, NODE}
-    enum Data { NUMBER, OPERATOR };
-    enum Op { MULT, ADD, SUB, DIV, MINUS }
-    
+    enum NodeType { LEAF, NODE}     
     interface INode
     {
         NodeType getNode();
-        void setNode(NodeType t);
     }
-
-    class Node 
+    class Node : INode
     {
-        NodeType nodeT;
-        int num;
-       public NodeType getNode()
-       {
-            return NodeType.NODE;
-       }
-       public void setNode(NodeType t)
-        {
-            nodeT = t;
-        }
-        public int getValue()
-        {
-            return num;
-        }
-        public void setValue(int n)
-        {
-            num = n;
-        }
-       public Node right { get; set; }
-       public Node left { get; set; }
+        NodeType nodeT = NodeType.NODE;
        
-    }
-  
-    class Operand : Node
-    {
-        public int num { get; }
-        public Operand(int n)
+        // operator
+        public char op { get; }
+        public INode left { get; }         
+        public INode right { get; }         
+        public Node(INode l,char o,INode r)  
         {
-            num = n;
+            left = l;
+            op = o;
+            right = r;
         }
-        
+       public NodeType getNode()     
+       {
+            return nodeT;
+       }
+       public char getOperator() 
+       {
+            return op;
+       }   
     }
     class Leaf : INode
     {
-        char op { get; set; }
-        NodeType nodeT;
-        public NodeType getNode()
+        // Operand
+        int num;     
+        NodeType nodeT = NodeType.LEAF;       
+        public NodeType getNode()           
         {
-            return NodeType.NODE;
+            return nodeT;
         }
-        public void setNode(NodeType t)
+        public Leaf(int n)      
         {
-            nodeT = t;
+            num = n;
         }
-        public Operator(char o)
+        public int getValue()       
         {
-            op = o;
+            return num;
         }
     }
-
-    class PreorderNotation
+    class ExpressionTree
     {
-        public static int buildTree(string expr)
+        public static INode root;
+        public static void build(string expr)
         {
-            char[] operators = new char[] { '+', '-', '*', '/', '~' };
+            string[] operators = new string[] { "+", "-", "*", "/", "~" };          
             string[] tokens = expr.Split(' ');
-            Stack<Node> NodeStack = new Stack<Node>();
-            foreach (string token in tokens.Reverse())
+            Stack<INode> NodeStack = new Stack<INode>();
+            // Reading expression as Postfix (from right to left)
+            for (int i = tokens.Length-1; i >= 0; --i)          
             {
-                int num;
-                if (int.TryParse(token,out num) && !token.Equals(operators))
-                {
-                    Node n = new Operand(num);
-                    n.left = null;
-                    n.right = null;
-                    n.data = Data.NUMBER;
-                    NodeStack.Push(n);
-                }
-                else if (!int.TryParse(token, out num) && !token.Equals(operators))
-                {
-                    Console.WriteLine("Format Error");
-                    Environment.Exit(0);
-                }
-                else
-                {
-
-                    if (token.Equals(operators) && !token.Equals('~'))
+                    if (int.TryParse(tokens[i], out int num))     
                     {
-                        if ( NodeStack.Count == 0)
-                        {
-                            Console.WriteLine("Format Error");
-                            Environment.Exit(0);
-                        }
-                        int temp = ((Operand)NodeStack.Pop()).num;
-                        temp = -temp;
-                        Node tempN = new Operand(temp);
-                        tempN.left = null;
-                        tempN.right = null;
-                        NodeStack.Push(tempN);
+                        INode l = new Leaf(num);               
+                        NodeStack.Push(l);
+                    }
+                    else if (!int.TryParse(tokens[i], out num) && !operators.Contains(tokens[i]) ) 
+                    {
+                        Console.WriteLine("Format Error");   
+                        Environment.Exit(0);             
                     }
                     else
                     {
-                        if ( NodeStack.Count < 2)
+                        // unary minus
+                        if (tokens[i] == "~")          
                         {
-                            Console.WriteLine("Format Error");
+                            if (NodeStack.Count == 0)           
+                            {
+                                Console.WriteLine("Format Error");
+                                Environment.Exit(0);
+                            }
+                            int temp = ((Leaf)NodeStack.Pop()).getValue();
+                            // Not storing the unary minus in to the tree. Just applying it.
+                            temp = -temp;                      
+                            INode tempN = new Leaf(temp);
+                            NodeStack.Push(tempN);
+                        }
+                        else
+                        {
+                            // not enough operands in an expression
+                            if (NodeStack.Count < 2)        
+                            {
+                                Console.WriteLine("Format Error");
+                                Environment.Exit(0);
+                            }
+                            INode l = NodeStack.Pop();              
+                            INode r = NodeStack.Pop();
+                            root = new Node(l, Convert.ToChar(tokens[i]), r);       
+                            NodeStack.Push(root);
+                            // Create a node and store pointer at the node to the stack
+                        }
+                }
+            }
+            // more operands in an expression
+            if (NodeStack.Count() > 1 )
+            {
+                Console.WriteLine("Format Error");
+                Environment.Exit(0);
+            }
+        }
+       
+    }
+    class Result
+    {
+        // Tree Traversal
+        public static int evalTree(INode node,int result)
+        {
+            if (node == null) { return result; }
+            if(node.getNode() == NodeType.LEAF)
+            {
+                return ((Leaf)node).getValue();     
+            }
+            else
+            {
+                Node n = (Node)node;
+                int op1 = evalTree(n.left,result);
+                int op2 = evalTree(n.right,result);
+                result = compute(op1, op2, n.getOperator());        
+            }
+            return result;
+        }
+
+        // Compute expression
+        public static int compute(int op1, int op2, char op)
+        {
+            int result = 0;
+            try
+            {
+                switch (op)
+                {
+                    case '+':
+                        result = checked(op1 + op2);
+                        break;
+                    case '-':
+                        result = checked(op1 - op2);
+                        break;
+                    case '*':
+                        result = checked(op1 * op2);
+                        break;
+                    case '/':
+                        if (op2 == 0)
+                        {
+                            Console.WriteLine("Divide Error");
                             Environment.Exit(0);
                         }
-                        Node internal = new Operator
-                    }
-                }   
+                        result = checked(op1 / op2);
+                        break;
+                    default:
+                        break;
+                }
             }
-
-            return 0;
+            catch (OverflowException)
+            {
+                Console.WriteLine("Overflow Error");
+                Environment.Exit(0);
+            }
+            return result;
         }
     }
     class Program
     {
         static void Main(string[] args)
         {
-            string expression = Console.ReadLine();
-          
-            // PreorderNotation.evaluate(expression);
+            string expr = Console.ReadLine();
+            ExpressionTree.build(expr);
+            int result = Result.evalTree(ExpressionTree.root, 0);
+            Console.WriteLine(result);
         }
     }
 }
