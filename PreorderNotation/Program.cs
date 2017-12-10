@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 /// <summary>
 ///  Evaluater of a Prefix expression
-///  Program converts the expression in to the Binary Expression Tree
+///  Program converts the expression in to the Binary Tree
 ///  If a tree is constructed, program will return the result.
 /// </summary>
 
@@ -139,7 +139,6 @@ namespace PreorderNotation
             }
             return result;
         }
-
         // Compute expression
         public static int compute(int op1, int op2, char op)
         {
